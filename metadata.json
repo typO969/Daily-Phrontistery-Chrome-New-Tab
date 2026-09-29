@@ -1,0 +1,6 @@
+{
+  "name": "Daily Phrontistery",
+  "description": "A scholarly, atmospheric new tab experience showcasing rare and intriguing words with intelligent semantic background themes, audio pronunciation, etymology, and customizable layout.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

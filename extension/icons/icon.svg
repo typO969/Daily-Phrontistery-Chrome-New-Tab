@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Dark navy rounded background -->
+  <rect width="128" height="128" rx="26" fill="#0c1222" />
+
+  <!-- Lowercase 'd' in bright yellow -->
+  <text x="14" y="97" 
+        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" 
+        font-size="64" 
+        font-weight="900" 
+        fill="#ffff00">d</text>
+
+  <!-- Uppercase 'P' in bold amber/orange -->
+  <text x="39" y="97" 
+        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" 
+        font-size="82" 
+        font-weight="900" 
+        fill="#f58f18">P</text>
+
+  <!-- Cyan accent dot under the bowl of 'P' -->
+  <circle cx="67" cy="88" r="6" fill="#38bdf8" />
+
+  <!-- Italic serif superscript 'h' in white -->
+  <text x="94" y="38" 
+        font-family="Georgia, 'Times New Roman', serif" 
+        font-size="30" 
+        font-style="italic" 
+        font-weight="normal" 
+        fill="#ffffff">h</text>
+</svg>
