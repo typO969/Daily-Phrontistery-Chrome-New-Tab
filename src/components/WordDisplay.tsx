@@ -259,17 +259,64 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
     }
   };
 
-  // Word heading size scaling
+  // Word heading size scaling - responsive & length-aware to safeguard against runoffs
   const getWordSizeClass = () => {
+    const len = (word.word || '').length;
+
     switch (wordSize) {
       case 'compact':
+        if (len >= 14) return 'text-3xl sm:text-4xl lg:text-5xl';
         return 'text-4xl sm:text-5xl lg:text-6xl';
       case 'monumental':
+        if (len >= 16) return 'text-4xl sm:text-5xl lg:text-6xl 2xl:text-7xl tracking-tight';
+        if (len >= 12) return 'text-5xl sm:text-6xl lg:text-7xl 2xl:text-8xl tracking-tight';
+        if (len >= 8) return 'text-5xl sm:text-6xl lg:text-8xl 2xl:text-9xl tracking-tight';
         return 'text-6xl sm:text-7xl lg:text-9xl tracking-tight';
       case 'balanced':
       default:
+        if (len >= 14) return 'text-4xl sm:text-5xl lg:text-6xl tracking-normal';
         return 'text-5xl sm:text-6xl lg:text-7xl tracking-normal';
     }
+  };
+
+  // Adaptive typography for the Split Curatorial dual-column layout
+  // Calibrated so that regular/classic size + monumental scale never overflows or clips the right column
+  const getSplitCuratorialWordSizeClass = () => {
+    const len = (word.word || '').length;
+
+    if (wordSize === 'monumental') {
+      if (!isImmersive) {
+        // Regular / Classic scale (~440px text column inside max-w-4xl box)
+        if (len >= 16) return 'text-2xl sm:text-3xl lg:text-[2.15rem] leading-tight';
+        if (len >= 13) return 'text-2xl sm:text-3xl lg:text-4xl leading-tight';
+        if (len >= 10) return 'text-3xl sm:text-4xl lg:text-[2.65rem] leading-tight';
+        if (len >= 7) return 'text-3xl sm:text-4xl lg:text-5xl leading-none';
+        return 'text-4xl sm:text-5xl lg:text-[3.4rem] leading-none';
+      }
+      // Immersive scale (spacious 700-950px column on 4K)
+      if (len >= 16) return 'text-3xl sm:text-4xl lg:text-5xl 2xl:text-6xl';
+      if (len >= 12) return 'text-3xl sm:text-4xl lg:text-5xl 2xl:text-7xl';
+      if (len >= 9) return 'text-4xl sm:text-5xl lg:text-6xl 2xl:text-8xl';
+      if (len >= 6) return 'text-4xl sm:text-6xl lg:text-7xl 2xl:text-8xl';
+      return 'text-5xl sm:text-6xl lg:text-8xl 2xl:text-9xl';
+    }
+
+    if (wordSize === 'compact') {
+      if (len >= 12) return 'text-2xl sm:text-3xl lg:text-3xl';
+      if (len >= 7) return 'text-2xl sm:text-3xl lg:text-4xl';
+      return 'text-3xl sm:text-4xl lg:text-4xl';
+    }
+
+    // Default 'balanced'
+    if (!isImmersive) {
+      if (len >= 14) return 'text-2xl sm:text-3xl lg:text-3xl';
+      if (len >= 10) return 'text-2xl sm:text-3xl lg:text-4xl';
+      if (len >= 7) return 'text-3xl sm:text-4xl lg:text-[2.65rem]';
+      return 'text-3xl sm:text-4xl lg:text-5xl';
+    }
+    if (len >= 14) return 'text-3xl sm:text-4xl lg:text-5xl';
+    if (len >= 9) return 'text-3xl sm:text-5xl lg:text-6xl';
+    return 'text-4xl sm:text-6xl lg:text-7xl';
   };
 
   const handlePronounce = () => {
@@ -623,7 +670,7 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
             style={{ backgroundColor: `rgba(18, 16, 14, ${effectiveOpacity})` }}
           >
             {/* Left Art Plate */}
-            <div className="md:col-span-5 relative min-h-[260px] md:min-h-[460px] 2xl:min-h-[520px] overflow-hidden group">
+            <div className="md:col-span-5 xl:col-span-5 relative min-h-[260px] md:min-h-[460px] 2xl:min-h-[520px] overflow-hidden group">
               <img
                 src={artwork.url}
                 alt={artwork.title}
@@ -640,8 +687,8 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
             </div>
 
             {/* Right Lexicon Details */}
-            <div className={`md:col-span-7 ${isImmersive ? 'p-6 sm:p-12 2xl:p-14' : 'p-6 sm:p-10'} flex flex-col justify-between text-left`}>
-              <div>
+            <div className={`md:col-span-7 xl:col-span-7 min-w-0 ${isImmersive ? 'p-6 sm:p-10 2xl:p-14' : 'p-6 sm:p-7 md:p-8 lg:p-9'} flex flex-col justify-between text-left`}>
+              <div className="min-w-0 w-full">
                 <div className="flex items-center justify-between gap-4 mb-4 text-xs text-stone-400 font-sans-ui border-b border-white/10 pb-3">
                   {components.showGistBadge && (
                     <span className="inline-flex items-center gap-1.5 text-amber-300 font-medium">
@@ -663,7 +710,7 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
                 </div>
 
                 {components.showWord && (
-                  <h1 className={`${getFontFamilyClass()} ${getWordSizeClass()} font-bold text-stone-100 leading-tight mb-2 capitalize`}>
+                  <h1 className={`${getFontFamilyClass()} ${getSplitCuratorialWordSizeClass()} font-bold text-stone-100 leading-tight mb-2 capitalize [overflow-wrap:anywhere] break-words hyphens-auto max-w-full`}>
                     {word.word}
                   </h1>
                 )}
