@@ -1,0 +1,63 @@
+const fs = require('fs');
+const path = require('path');
+const JSZip = require('jszip');
+
+async function syncAndPackageExtension() {
+  const root = path.resolve(__dirname, '..');
+  const distDir = path.join(root, 'dist');
+  const extDir = path.join(root, 'extension');
+  const publicDir = path.join(root, 'public');
+
+  if (!fs.existsSync(distDir)) {
+    console.error('dist/ does not exist. Run vite build first.');
+    return;
+  }
+
+  // 1. Copy built HTML and assets to extension folder
+  if (!fs.existsSync(extDir)) fs.mkdirSync(extDir, { recursive: true });
+  
+  const distIndex = path.join(distDir, 'index.html');
+  if (fs.existsSync(distIndex)) {
+    fs.copyFileSync(distIndex, path.join(extDir, 'index.html'));
+  }
+
+  const distAssets = path.join(distDir, 'assets');
+  const extAssets = path.join(extDir, 'assets');
+  if (fs.existsSync(distAssets)) {
+    if (fs.existsSync(extAssets)) {
+      fs.rmSync(extAssets, { recursive: true, force: true });
+    }
+    fs.mkdirSync(extAssets, { recursive: true });
+    const assetFiles = fs.readdirSync(distAssets);
+    for (const file of assetFiles) {
+      fs.copyFileSync(path.join(distAssets, file), path.join(extAssets, file));
+    }
+  }
+
+  // 2. Package everything into a standalone zip
+  const zip = new JSZip();
+  function addDir(dirPath, zipFolder) {
+    const files = fs.readdirSync(dirPath);
+    for (const file of files) {
+      const fullPath = path.join(dirPath, file);
+      const stat = fs.statSync(fullPath);
+      if (stat.isDirectory()) {
+        addDir(fullPath, zipFolder.folder(file));
+      } else {
+        const content = fs.readFileSync(fullPath);
+        zipFolder.file(file, content);
+      }
+    }
+  }
+
+  addDir(extDir, zip);
+
+  if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
+
+  const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+  const outPath = path.join(publicDir, 'daily-phrontistery-extension.zip');
+  fs.writeFileSync(outPath, zipBuffer);
+  console.log('✓ Successfully packaged standalone extension to:', outPath, `(${Math.round(zipBuffer.length / 1024)} KB)`);
+}
+
+syncAndPackageExtension().catch(console.error);

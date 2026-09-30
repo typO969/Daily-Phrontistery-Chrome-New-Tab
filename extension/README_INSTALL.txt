@@ -2,8 +2,8 @@
   DAILY PHRONTISTERY — CHROME EXTENSION (MANIFEST V3)
 =====================================================
 
-All required icons (icon16.png, icon48.png, icon128.png) and
-CSP-compliant external scripts (newtab.js) are already included.
+The complete compiled application (assets/, icons/, index.html, manifest.json)
+is 100% self-contained and loads instantly offline without depending on any remote server.
 
 HOW TO INSTALL IN CHROME:
 1. Unzip this downloaded archive into a folder on your computer

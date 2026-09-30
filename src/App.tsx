@@ -27,6 +27,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   layoutStyle: 'museum_placard',
   fontFamily: 'cormorant',
   wordSize: 'balanced',
+  boxScale: 'immersive',
   animationSpeed: 'gentle',
   enableAmbientParticles: true,
   enableAmbientSound: false,
@@ -62,6 +63,7 @@ export default function App() {
         return {
           ...DEFAULT_SETTINGS,
           ...parsed,
+          boxScale: parsed.boxScale || 'immersive',
           components: { ...DEFAULT_SETTINGS.components, ...(parsed.components || {}) },
         };
       }
@@ -398,6 +400,13 @@ export default function App() {
           components={settings.components}
           fontFamily={settings.fontFamily}
           wordSize={settings.wordSize}
+          boxScale={settings.boxScale || 'immersive'}
+          onToggleBoxScale={() => {
+            setSettings((p) => ({
+              ...p,
+              boxScale: p.boxScale === 'immersive' ? 'classic' : 'immersive',
+            }));
+          }}
           overlayOpacity={settings.overlayOpacity}
           frameOpacity={settings.frameOpacity}
           isFrameTranslucent={settings.isFrameTranslucent}

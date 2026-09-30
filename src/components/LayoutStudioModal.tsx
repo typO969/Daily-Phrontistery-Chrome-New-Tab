@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { X, Sliders, Type, Eye, Palette, Wind, Sparkles, Upload, RotateCcw, Check, LayoutGrid, Volume2, Download, ShieldCheck } from 'lucide-react';
+import { X, Sliders, Type, Eye, Palette, Wind, Sparkles, Upload, RotateCcw, Check, LayoutGrid, Volume2, Download, ShieldCheck, Maximize2, Minimize2 } from 'lucide-react';
 import { AppSettings, LayoutStyle, DisplayMode } from '../types';
 import { downloadChromeExtensionPackage } from '../utils/extensionExporter';
 
@@ -52,31 +52,41 @@ export const LayoutStudioModal: React.FC<LayoutStudioModalProps> = ({
     }
   };
 
-  const layoutOptions: { id: LayoutStyle; name: string; desc: string }[] = [
+  const layoutOptions: {
+    id: LayoutStyle;
+    name: string;
+    placement: string;
+    desc: string;
+  }[] = [
     {
       id: 'museum_placard',
-      name: 'Museum Placard',
-      desc: 'Balanced fine-art gallery placard with refined framing and accession notes',
+      name: '1. Museum Placard',
+      placement: 'Centered (Gallery Placard)',
+      desc: 'Balanced museum gallery placard with refined framing and accession notes. Centered on all axes.',
     },
     {
       id: 'monograph',
-      name: 'Editorial Monograph',
-      desc: 'Left-aligned bookfolio layout with drop-caps and margin notes',
+      name: '2. Editorial Monograph',
+      placement: 'Left of Center (1/3 mark) · Lower Third',
+      desc: 'Box center positioned at ~1/3 from viewport left and shifted slightly below center for contemplative balance.',
     },
     {
       id: 'zenith_minimal',
-      name: 'Zenith Minimalist',
-      desc: 'Monumental typography, generous negative space, distraction-free',
+      name: '3. Zenith Minimalist',
+      placement: 'Alternating 1/3 Left or Right · +50px Lift',
+      desc: 'Unframed pure typography shifted 50px upward, anchoring at 1/3 left or 1/3 right per word.',
     },
     {
       id: 'split_curatorial',
-      name: 'Split Curatorial',
-      desc: 'Dual columns: Museum artwork plate left, scholarly treatise right',
+      name: '4. Split Curatorial',
+      placement: 'Far Left Anchor · ~100px From Bottom',
+      desc: 'Asymmetric dual columns (plate left, text right), anchored ~100px from page bottom leaving top sky open.',
     },
     {
       id: 'broadsheet',
-      name: 'Broadsheet Folio',
-      desc: 'Historical multi-column gazette formatting with bold headlines',
+      name: '5. Broadsheet Folio',
+      placement: 'Between 1/3 & Center · Subtly North (+60px)',
+      desc: 'Dual-column gazette folio resting between 1/3 and true center, elevated ~60px north of center.',
     },
   ];
 
@@ -101,30 +111,90 @@ export const LayoutStudioModal: React.FC<LayoutStudioModalProps> = ({
           </button>
         </div>
 
-        {/* Section 1: Layout Archetypes */}
+        {/* Section 1: Layout Archetypes & Spatial Placement */}
         <div className="mb-6">
           <label className="text-xs uppercase tracking-wider text-amber-400 font-semibold mb-3 flex items-center gap-1.5">
             <LayoutGrid className="w-3.5 h-3.5" />
-            <span>Layout Archetype Preset</span>
+            <span>Layout Archetype & Spatial Placement</span>
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {layoutOptions.map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => onUpdateSettings((p) => ({ ...p, layoutStyle: opt.id }))}
-                className={`text-left p-3 rounded-xl border transition-all ${
+                className={`text-left p-3.5 rounded-xl border transition-all ${
                   settings.layoutStyle === opt.id
-                    ? 'border-amber-400 bg-amber-400/10 text-stone-100 shadow-sm'
+                    ? 'border-amber-400 bg-amber-400/10 text-stone-100 shadow-sm ring-1 ring-amber-400/40'
                     : 'border-white/10 bg-white/5 hover:bg-white/10 text-stone-300'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-sm">{opt.name}</span>
+                  <span className="font-semibold text-xs text-amber-200">{opt.name}</span>
                   {settings.layoutStyle === opt.id && <Check className="w-4 h-4 text-amber-400" />}
                 </div>
-                <p className="text-xs text-stone-400 leading-snug">{opt.desc}</p>
+                <span className="text-[10px] font-mono-data text-amber-300/80 block mb-1.5">{opt.placement}</span>
+                <p className="text-[11px] text-stone-400 leading-snug">{opt.desc}</p>
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Section 2: Word Box Proportions & Scale (4K & Ultra-wide Screen Display) */}
+        <div className="mb-6 p-4 rounded-xl bg-white/[0.03] border border-white/10">
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-xs uppercase tracking-wider text-amber-400 font-semibold flex items-center gap-1.5">
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span>Word Box Scale & Viewport Presence</span>
+            </label>
+            <span className="text-[10px] font-mono-data px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30">
+              4K / Wide Display Ready
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              onClick={() => onUpdateSettings((p) => ({ ...p, boxScale: 'immersive' }))}
+              className={`text-left p-3.5 rounded-xl border transition-all ${
+                (settings.boxScale || 'immersive') === 'immersive'
+                  ? 'border-amber-400 bg-amber-400/15 text-stone-100 shadow-md ring-1 ring-amber-400/40'
+                  : 'border-white/10 bg-white/5 hover:bg-white/10 text-stone-300'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-semibold text-xs flex items-center gap-1.5">
+                  <Maximize2 className="w-3.5 h-3.5 text-amber-300" />
+                  Grand & Immersive (1.5x / 4K Scale)
+                </span>
+                {(settings.boxScale || 'immersive') === 'immersive' && (
+                  <Check className="w-4 h-4 text-amber-400 shrink-0" />
+                )}
+              </div>
+              <p className="text-[11px] text-stone-400 leading-snug">
+                Expands the word card by ~1.5x (up to 93% browser real-estate). Optimized specifically for 4K and widescreen displays with luxurious typographic presence.
+              </p>
+            </button>
+
+            <button
+              onClick={() => onUpdateSettings((p) => ({ ...p, boxScale: 'classic' }))}
+              className={`text-left p-3.5 rounded-xl border transition-all ${
+                settings.boxScale === 'classic'
+                  ? 'border-amber-400 bg-amber-400/15 text-stone-100 shadow-md ring-1 ring-amber-400/40'
+                  : 'border-white/10 bg-white/5 hover:bg-white/10 text-stone-300'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-semibold text-xs flex items-center gap-1.5">
+                  <Minimize2 className="w-3.5 h-3.5 text-stone-400" />
+                  Classic Intimate (Compact Placard)
+                </span>
+                {settings.boxScale === 'classic' && (
+                  <Check className="w-4 h-4 text-amber-400 shrink-0" />
+                )}
+              </div>
+              <p className="text-[11px] text-stone-400 leading-snug">
+                Traditional compact gallery placard scale (max-w-3xl / max-w-4xl) with tighter boundaries and centered containment.
+              </p>
+            </button>
           </div>
         </div>
 

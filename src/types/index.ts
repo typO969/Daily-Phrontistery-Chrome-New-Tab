@@ -78,6 +78,8 @@ export type LayoutStyle =
 
 export type DisplayMode = 'daily' | 'random_every_tab';
 
+export type BoxScale = 'classic' | 'immersive';
+
 export interface ComponentVisibility {
   showWord: boolean;
   showPhonetics: boolean;
@@ -98,6 +100,7 @@ export interface AppSettings {
   layoutStyle: LayoutStyle;
   fontFamily: 'cormorant' | 'playfair' | 'cinzel' | 'instrument' | 'sans';
   wordSize: 'compact' | 'balanced' | 'monumental';
+  boxScale?: BoxScale; // 'immersive' (1.5x up to 93% for 4K / wide screens) vs 'classic' (compact)
   animationSpeed: 'off' | 'gentle' | 'normal';
   enableAmbientParticles: boolean;
   enableAmbientSound: boolean;

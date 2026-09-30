@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Volume2, Bookmark, BookmarkCheck, Search, Sparkles, Compass, Feather, Trees, Moon, Columns, BookOpen, Activity, Brain, Crown, ExternalLink } from 'lucide-react';
-import { PhrontisteryWord, ColorTheme, LayoutStyle, ComponentVisibility, ArtworkBackground, PronunciationStyle } from '../types';
+import React, { useState, useMemo } from 'react';
+import { Volume2, Bookmark, BookmarkCheck, Search, Sparkles, Compass, Feather, Trees, Moon, Columns, BookOpen, Activity, Brain, Crown, ExternalLink, Maximize2, Minimize2 } from 'lucide-react';
+import { PhrontisteryWord, ColorTheme, LayoutStyle, ComponentVisibility, ArtworkBackground, PronunciationStyle, BoxScale } from '../types';
 import { formatPartOfSpeech, GIST_LABELS } from '../utils/themeAndGist';
 import { speakWord } from '../utils/audioSynth';
 import { generatePhoneticRespelling, generateApproxIpa } from '../utils/pronunciationService';
@@ -12,6 +12,8 @@ interface WordDisplayProps {
   components: ComponentVisibility;
   fontFamily: 'cormorant' | 'playfair' | 'cinzel' | 'instrument' | 'sans';
   wordSize: 'compact' | 'balanced' | 'monumental';
+  boxScale?: BoxScale;
+  onToggleBoxScale?: () => void;
   overlayOpacity: number;
   frameOpacity?: number;
   isFrameTranslucent?: boolean;
@@ -99,6 +101,8 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
   components,
   fontFamily,
   wordSize,
+  boxScale = 'immersive',
+  onToggleBoxScale,
   overlayOpacity,
   frameOpacity,
   isFrameTranslucent,
@@ -116,8 +120,53 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
 
   const effectiveOpacity = isFrameTranslucent !== false ? (frameOpacity ?? overlayOpacity ?? 0.65) : 1.0;
   const isTranslucent = effectiveOpacity < 0.98;
+  const isImmersive = boxScale === 'immersive';
+
+  // Deterministic 1/3 left vs 1/3 right placement for Zenith Minimalist per word
+  const isZenithRight = useMemo(() => {
+    const code = (word.word || '').split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+    return code % 2 === 1;
+  }, [word.word]);
 
   const gistInfo = word.gist ? GIST_LABELS[word.gist] : GIST_LABELS.linguistics_literature;
+
+  // Scale toggle button for card headers
+  const renderScaleButton = () => {
+    if (!onToggleBoxScale) return null;
+    return (
+      <button
+        onClick={onToggleBoxScale}
+        className="hover:text-amber-200 transition-colors font-mono-data text-[11px] px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 border border-white/10 flex items-center gap-1.5"
+        title={isImmersive ? 'Switch to Classic Intimate card scale' : 'Switch to 1.5x Grand & Immersive (4K) scale'}
+      >
+        {isImmersive ? (
+          <>
+            <Minimize2 className="w-3 h-3 text-amber-300" />
+            <span>1.5x Full</span>
+          </>
+        ) : (
+          <>
+            <Maximize2 className="w-3 h-3 text-stone-400" />
+            <span>Classic</span>
+          </>
+        )}
+      </button>
+    );
+  };
+
+  // Opacity cycle button for card headers
+  const renderOpacityButton = () => {
+    if (!onCycleFrameOpacity) return null;
+    return (
+      <button
+        onClick={onCycleFrameOpacity}
+        className="hover:text-amber-200 transition-colors font-mono-data text-[11px] px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 border border-white/10"
+        title="Cycle frame opacity (50% -> 65% -> 80% -> 100%)"
+      >
+        Opacity: {Math.round(effectiveOpacity * 100)}%
+      </button>
+    );
+  };
 
   // Renders the configured pronunciation format (respelling, IPA, both, or audio-only)
   const renderPronunciationGuide = () => {
@@ -258,410 +307,461 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
   });
 
   return (
-    <main className="relative z-20 flex-1 flex flex-col justify-center items-center px-4 sm:px-8 py-6 md:py-10 max-w-7xl mx-auto w-full">
+    <main className="relative z-20 flex-1 flex flex-col justify-between w-full min-h-[calc(100vh-130px)] px-4 sm:px-8 md:px-12 2xl:px-16 py-4 sm:py-6 overflow-x-hidden">
       {/* Optional Top Clock / Gregorian Ribbon */}
       {(components.showClock || components.showDate) && (
-        <div className="w-full flex items-center justify-between text-xs tracking-widest uppercase font-mono-data text-stone-400 mb-6 px-2">
+        <div className="w-full flex items-center justify-between text-xs tracking-widest uppercase font-mono-data text-stone-400 mb-4 px-2 max-w-7xl mx-auto">
           {components.showDate && <span>{dateString}</span>}
           {components.showClock && <span className="text-amber-300/90 font-medium ml-auto">{timeString}</span>}
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* LAYOUT PRESET: MUSEUM PLACARD (Gallery centered card)                      */}
+      {/* LAYOUT PRESET 1: MUSEUM PLACARD (Gallery centered card)                    */}
       {/* ========================================================================= */}
       {layoutStyle === 'museum_placard' && (
-        <div
-          className={`w-full max-w-3xl rounded-2xl p-6 sm:p-10 md:p-12 border ${
-            isTranslucent ? 'border-white/20 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]' : 'border-white/10 shadow-2xl'
-          } transition-all duration-300 relative text-center`}
-          style={{ backgroundColor: `rgba(18, 16, 14, ${effectiveOpacity})` }}
-        >
-          {/* Top category & actions */}
-          <div className="flex items-center justify-between gap-4 mb-6 text-xs text-stone-400 font-sans-ui border-b border-white/10 pb-4">
-            {components.showGistBadge && (
-              <span className="inline-flex items-center gap-1.5 text-amber-300/90 tracking-wider uppercase font-medium">
-                {renderGistIcon()}
-                <span>{gistInfo.label}</span>
-              </span>
-            )}
-            <div className="flex items-center gap-3 ml-auto">
-              {onCycleFrameOpacity && (
-                <button
-                  onClick={onCycleFrameOpacity}
-                  className="hover:text-amber-200 transition-colors font-mono-data text-[11px] px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 border border-white/10"
-                  title="Cycle frame opacity (50% -> 65% -> 80% -> 100%)"
-                >
-                  Opacity: {Math.round(effectiveOpacity * 100)}%
-                </button>
-              )}
-              <button
-                onClick={handleCopyWord}
-                className="hover:text-amber-200 transition-colors"
-                title="Copy word and definition"
-              >
-                {copiedNotification ? <span className="text-emerald-400">Copied!</span> : 'Copy'}
-              </button>
-              <button
-                onClick={onToggleFavorite}
-                className={`transition-colors ${isFavorite ? 'text-amber-400' : 'text-stone-400 hover:text-stone-200'}`}
-                title={isFavorite ? 'Saved in favorites' : 'Save to favorites'}
-              >
-                {isFavorite ? <BookmarkCheck className="w-4 h-4 fill-amber-400" /> : <Bookmark className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          {/* Word Heading */}
-          {components.showWord && (
-            <div className="mb-4">
-              <h1 className={`${getFontFamilyClass()} ${getWordSizeClass()} font-semibold text-stone-100 leading-none text-glow-gold capitalize`}>
-                {word.word}
-              </h1>
-            </div>
-          )}
-
-          {/* Role in Language & Phonetics */}
-          {(components.showPartOfSpeech || components.showPhonetics) && (
-            <div className="flex items-center justify-center gap-3 text-sm text-stone-300 mb-6 font-editorial-body italic">
-              {components.showPartOfSpeech && (
-                <span className="font-sans-ui not-italic text-xs tracking-wider uppercase text-amber-300/80 font-semibold">
-                  {formatPartOfSpeech(word.part_of_speech)}
-                </span>
-              )}
-              {components.showPartOfSpeech && components.showPhonetics && pronunciationStyle !== 'off' && pronunciationStyle !== 'audio_only' && (
-                <span className="text-stone-500" aria-hidden="true">·</span>
-              )}
-              {renderPronunciationGuide()}
-              {components.showAudioButton && (
-                <button
-                  onClick={handlePronounce}
-                  className="p-1 text-stone-400 hover:text-amber-300 transition-colors rounded-full hover:bg-white/10"
-                  title="Pronounce word"
-                  aria-label="Pronounce word"
-                >
-                  <Volume2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Definition */}
-          {components.showDefinition && (
-            <div className="mb-8 max-w-xl mx-auto">
-              <p className="font-cormorant text-xl sm:text-2xl text-stone-100 leading-relaxed font-normal">
-                {word.definition}
-              </p>
-            </div>
-          )}
-
-          {/* Etymology / Roots */}
-          {components.showEtymology && (
-            <EtymologySection word={word} align="center" />
-          )}
-
-          {/* Literary Example */}
-          {components.showExample && word.example && (
-            <blockquote className="mt-4 text-xs italic text-stone-300/80 font-cormorant max-w-md mx-auto">
-              "{word.example}"
-            </blockquote>
-          )}
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* LAYOUT PRESET: MONOGRAPH (Editorial left-anchored book layout)             */}
-      {/* ========================================================================= */}
-      {layoutStyle === 'monograph' && (
-        <div
-          className={`w-full max-w-4xl rounded-2xl p-8 sm:p-12 border ${
-            isTranslucent ? 'border-white/20 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]' : 'border-white/10 shadow-2xl'
-          } transition-all duration-300 relative text-left`}
-          style={{ backgroundColor: `rgba(18, 16, 14, ${effectiveOpacity})` }}
-        >
-          {/* Header Metadata */}
-          <div className="flex items-center justify-between gap-4 text-xs text-stone-400 font-sans-ui border-b border-white/10 pb-4 mb-6">
-            <div className="flex items-center gap-2">
-              <span className="tracking-widest uppercase text-stone-400">Folio Vol. IV</span>
-              <span aria-hidden="true">·</span>
+        <div className="flex-1 flex flex-col justify-center items-center w-full my-auto transition-all duration-500">
+          <div
+            className={`w-full ${
+              isImmersive
+                ? 'max-w-4xl xl:max-w-5xl 2xl:max-w-6xl p-8 sm:p-12 md:p-14 2xl:p-16'
+                : 'max-w-3xl p-6 sm:p-10 md:p-12'
+            } rounded-2xl border ${
+              isTranslucent ? 'border-white/20 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]' : 'border-white/10 shadow-2xl'
+            } transition-all duration-500 relative text-center mx-auto`}
+            style={{ backgroundColor: `rgba(18, 16, 14, ${effectiveOpacity})` }}
+          >
+            {/* Top category & actions */}
+            <div className="flex items-center justify-between gap-4 mb-6 text-xs text-stone-400 font-sans-ui border-b border-white/10 pb-4">
               {components.showGistBadge && (
-                <span className="inline-flex items-center gap-1.5 text-amber-300 font-medium">
+                <span className="inline-flex items-center gap-1.5 text-amber-300/90 tracking-wider uppercase font-medium">
                   {renderGistIcon()}
                   <span>{gistInfo.label}</span>
                 </span>
               )}
-            </div>
-            <div className="flex items-center gap-3">
-              {onCycleFrameOpacity && (
+              <div className="flex items-center gap-2.5 ml-auto flex-wrap justify-end">
+                {renderScaleButton()}
+                {renderOpacityButton()}
                 <button
-                  onClick={onCycleFrameOpacity}
-                  className="hover:text-amber-200 transition-colors font-mono-data text-[11px] px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 border border-white/10"
-                  title="Cycle frame opacity"
+                  onClick={handleCopyWord}
+                  className="hover:text-amber-200 transition-colors"
+                  title="Copy word and definition"
                 >
-                  Opacity: {Math.round(effectiveOpacity * 100)}%
+                  {copiedNotification ? <span className="text-emerald-400">Copied!</span> : 'Copy'}
                 </button>
-              )}
-              <button
-                onClick={onToggleFavorite}
-                className={`transition-colors ${isFavorite ? 'text-amber-400' : 'text-stone-400 hover:text-stone-200'}`}
-                title={isFavorite ? 'Saved in favorites' : 'Save to favorites'}
-              >
-                {isFavorite ? <BookmarkCheck className="w-4 h-4 fill-amber-400" /> : <Bookmark className="w-4 h-4" />}
-              </button>
+                <button
+                  onClick={onToggleFavorite}
+                  className={`transition-colors ${isFavorite ? 'text-amber-400' : 'text-stone-400 hover:text-stone-200'}`}
+                  title={isFavorite ? 'Saved in favorites' : 'Save to favorites'}
+                >
+                  {isFavorite ? <BookmarkCheck className="w-4 h-4 fill-amber-400" /> : <Bookmark className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            <div className="lg:col-span-8">
-              {components.showWord && (
-                <h1 className={`${getFontFamilyClass()} ${getWordSizeClass()} font-bold text-stone-100 leading-tight mb-2 capitalize text-glow-subtle`}>
+            {/* Word Heading */}
+            {components.showWord && (
+              <div className="mb-4">
+                <h1 className={`${getFontFamilyClass()} ${getWordSizeClass()} font-semibold text-stone-100 leading-none text-glow-gold capitalize`}>
                   {word.word}
                 </h1>
-              )}
+              </div>
+            )}
 
-              {(components.showPartOfSpeech || components.showPhonetics) && (
-                <div className="flex items-center gap-3 text-sm text-stone-300 mb-5 font-editorial-body italic">
-                  {components.showPartOfSpeech && (
-                    <span className="font-sans-ui not-italic text-xs tracking-wider uppercase text-amber-300/90 font-semibold">
-                      {formatPartOfSpeech(word.part_of_speech)}
-                    </span>
-                  )}
-                  {components.showPartOfSpeech && components.showPhonetics && pronunciationStyle !== 'off' && pronunciationStyle !== 'audio_only' && (
-                    <span className="text-stone-500" aria-hidden="true">·</span>
-                  )}
-                  {renderPronunciationGuide()}
-                  {components.showAudioButton && (
-                    <button
-                      onClick={handlePronounce}
-                      className="p-1 text-stone-400 hover:text-amber-300 transition-colors rounded-full hover:bg-white/10"
-                      title="Pronounce word"
-                    >
-                      <Volume2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {components.showDefinition && (
-                <div className="mb-6">
-                  <p className="font-cormorant text-xl sm:text-2xl text-stone-100 leading-relaxed font-normal first-letter:text-4xl first-letter:font-serif first-letter:font-bold first-letter:text-amber-300 first-letter:float-left first-letter:mr-2">
-                    {word.definition}
-                  </p>
-                </div>
-              )}
-
-              {components.showExample && word.example && (
-                <div className="pl-4 border-l-2 border-amber-400/40 text-sm italic text-stone-300/90 font-cormorant my-4">
-                  "{word.example}"
-                </div>
-              )}
-            </div>
-
-            {/* Margin Notes Column */}
-            <div className="lg:col-span-4 border-t lg:border-t-0 lg:border-l border-white/10 pt-6 lg:pt-0 lg:pl-6 text-xs text-stone-400 font-sans-ui space-y-4">
-              {components.showEtymology && (
-                <EtymologySection word={word} align="left" />
-              )}
-              {word.origin_language && (
-                <div>
-                  <span className="text-amber-300/90 font-semibold uppercase tracking-wider block mb-1">
-                    Origin Classification
+            {/* Role in Language & Phonetics */}
+            {(components.showPartOfSpeech || components.showPhonetics) && (
+              <div className="flex items-center justify-center gap-3 text-sm text-stone-300 mb-6 font-editorial-body italic">
+                {components.showPartOfSpeech && (
+                  <span className="font-sans-ui not-italic text-xs tracking-wider uppercase text-amber-300/80 font-semibold">
+                    {formatPartOfSpeech(word.part_of_speech)}
                   </span>
-                  <p className="leading-relaxed text-stone-300/90">{word.origin_language}</p>
-                </div>
-              )}
-            </div>
+                )}
+                {components.showPartOfSpeech && components.showPhonetics && pronunciationStyle !== 'off' && pronunciationStyle !== 'audio_only' && (
+                  <span className="text-stone-500" aria-hidden="true">·</span>
+                )}
+                {renderPronunciationGuide()}
+                {components.showAudioButton && (
+                  <button
+                    onClick={handlePronounce}
+                    className="p-1 text-stone-400 hover:text-amber-300 transition-colors rounded-full hover:bg-white/10"
+                    title="Pronounce word"
+                    aria-label="Pronounce word"
+                  >
+                    <Volume2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Definition */}
+            {components.showDefinition && (
+              <div className={`mb-8 ${isImmersive ? 'max-w-3xl' : 'max-w-xl'} mx-auto`}>
+                <p className={`font-cormorant ${isImmersive ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl'} text-stone-100 leading-relaxed font-normal`}>
+                  {word.definition}
+                </p>
+              </div>
+            )}
+
+            {/* Etymology / Roots */}
+            {components.showEtymology && (
+              <EtymologySection word={word} align="center" />
+            )}
+
+            {/* Literary Example */}
+            {components.showExample && word.example && (
+              <blockquote className={`mt-4 text-xs italic text-stone-300/80 font-cormorant ${isImmersive ? 'max-w-xl text-sm' : 'max-w-md'} mx-auto`}>
+                "{word.example}"
+              </blockquote>
+            )}
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* LAYOUT PRESET: ZENITH MINIMAL (Maximum negative space & typographic focus) */}
+      {/* LAYOUT PRESET 2: MONOGRAPH (Editorial left-anchored book layout)           */}
       {/* ========================================================================= */}
-      {layoutStyle === 'zenith_minimal' && (
-        <div className="w-full max-w-4xl text-center py-12 transition-all duration-300">
-          {components.showGistBadge && (
-            <div className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-amber-300/80 mb-4 font-sans-ui font-medium">
-              {renderGistIcon()}
-              <span>{gistInfo.label}</span>
-            </div>
-          )}
-
-          {components.showWord && (
-            <h1 className={`${getFontFamilyClass()} ${getWordSizeClass()} font-bold text-stone-100 mb-4 capitalize text-glow-gold drop-shadow-md`}>
-              {word.word}
-            </h1>
-          )}
-
-          {(components.showPartOfSpeech || components.showPhonetics) && (
-            <div className="flex items-center justify-center gap-3 text-sm text-stone-300 mb-6 font-sans-ui">
-              {components.showPartOfSpeech && (
-                <span className="text-xs uppercase tracking-widest text-amber-300 font-semibold">
-                  {formatPartOfSpeech(word.part_of_speech)}
-                </span>
-              )}
-              {components.showPartOfSpeech && components.showPhonetics && pronunciationStyle !== 'off' && pronunciationStyle !== 'audio_only' && (
-                <span className="text-stone-500" aria-hidden="true">·</span>
-              )}
-              {renderPronunciationGuide()}
-              {components.showAudioButton && (
-                <button
-                  onClick={handlePronounce}
-                  className="text-stone-400 hover:text-amber-300 transition-colors"
-                  title="Pronounce word"
-                >
-                  <Volume2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          )}
-
-          {components.showDefinition && (
-            <p className="font-cormorant text-2xl sm:text-3xl text-stone-100 max-w-2xl mx-auto leading-relaxed font-light drop-shadow">
-              {word.definition}
-            </p>
-          )}
-
-          {components.showEtymology && (
-            <EtymologySection word={word} align="center" />
-          )}
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* LAYOUT PRESET: SPLIT CURATORIAL (Art showcase on left, Lexicon on right)  */}
-      {/* ========================================================================= */}
-      {layoutStyle === 'split_curatorial' && (
-        <div
-          className={`w-full max-w-5xl rounded-2xl overflow-hidden border ${
-            isTranslucent ? 'border-white/20 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]' : 'border-white/10 shadow-2xl'
-          } transition-all duration-300 grid grid-cols-1 md:grid-cols-12`}
-          style={{ backgroundColor: `rgba(18, 16, 14, ${effectiveOpacity})` }}
-        >
-          {/* Left Art Plate */}
-          <div className="md:col-span-5 relative min-h-[260px] md:min-h-[460px] overflow-hidden group">
-            <img
-              src={artwork.url}
-              alt={artwork.title}
-              referrerPolicy="no-referrer"
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent flex flex-col justify-end p-5 text-left">
-              <span className="text-[10px] font-mono-data tracking-widest uppercase text-amber-300/90 mb-1">
-                Complementary Masterwork
-              </span>
-              <p className="text-sm font-serif font-medium text-stone-100 line-clamp-1">{artwork.title}</p>
-              <p className="text-xs text-stone-400 font-sans-ui">{artwork.artist} {artwork.year && `(${artwork.year})`}</p>
-            </div>
-          </div>
-
-          {/* Right Lexicon Details */}
-          <div className="md:col-span-7 p-6 sm:p-10 flex flex-col justify-between text-left">
-            <div>
-              <div className="flex items-center justify-between gap-4 mb-4 text-xs text-stone-400 font-sans-ui border-b border-white/10 pb-3">
+      {layoutStyle === 'monograph' && (
+        <div className="flex-1 flex flex-col justify-center w-full transition-all duration-500 lg:translate-y-8 xl:translate-y-12 2xl:translate-y-16">
+          <div
+            className={`w-full ${
+              isImmersive
+                ? 'max-w-5xl xl:max-w-6xl 2xl:max-w-[1550px] p-8 sm:p-12 2xl:p-16'
+                : 'max-w-4xl p-8 sm:p-12'
+            } rounded-2xl border ${
+              isTranslucent ? 'border-white/20 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]' : 'border-white/10 shadow-2xl'
+            } transition-all duration-500 relative text-left mx-auto lg:mx-0 lg:ml-[7vw] xl:ml-[9vw] 2xl:ml-[11vw] lg:mr-auto`}
+            style={{ backgroundColor: `rgba(18, 16, 14, ${effectiveOpacity})` }}
+          >
+            {/* Header Metadata */}
+            <div className="flex items-center justify-between gap-4 text-xs text-stone-400 font-sans-ui border-b border-white/10 pb-4 mb-6">
+              <div className="flex items-center gap-2">
+                <span className="tracking-widest uppercase text-stone-400">Folio Vol. IV</span>
+                <span aria-hidden="true">·</span>
                 {components.showGistBadge && (
                   <span className="inline-flex items-center gap-1.5 text-amber-300 font-medium">
                     {renderGistIcon()}
                     <span>{gistInfo.label}</span>
                   </span>
                 )}
+              </div>
+              <div className="flex items-center gap-2.5 flex-wrap justify-end">
+                {renderScaleButton()}
+                {renderOpacityButton()}
                 <button
                   onClick={onToggleFavorite}
                   className={`transition-colors ${isFavorite ? 'text-amber-400' : 'text-stone-400 hover:text-stone-200'}`}
+                  title={isFavorite ? 'Saved in favorites' : 'Save to favorites'}
                 >
                   {isFavorite ? <BookmarkCheck className="w-4 h-4 fill-amber-400" /> : <Bookmark className="w-4 h-4" />}
                 </button>
               </div>
-
-              {components.showWord && (
-                <h1 className={`${getFontFamilyClass()} ${getWordSizeClass()} font-bold text-stone-100 leading-tight mb-2 capitalize`}>
-                  {word.word}
-                </h1>
-              )}
-
-              {(components.showPartOfSpeech || components.showPhonetics) && (
-                <div className="flex items-center gap-2.5 text-sm text-stone-300 mb-5">
-                  {components.showPartOfSpeech && (
-                    <span className="font-sans-ui text-xs uppercase tracking-wider text-amber-300/90 font-semibold">
-                      {formatPartOfSpeech(word.part_of_speech)}
-                    </span>
-                  )}
-                  {components.showPartOfSpeech && components.showPhonetics && pronunciationStyle !== 'off' && pronunciationStyle !== 'audio_only' && (
-                    <span className="text-stone-500" aria-hidden="true">·</span>
-                  )}
-                  {renderPronunciationGuide()}
-                  {components.showAudioButton && (
-                    <button onClick={handlePronounce} className="text-stone-400 hover:text-amber-300">
-                      <Volume2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {components.showDefinition && (
-                <p className="font-cormorant text-xl sm:text-2xl text-stone-100 leading-relaxed font-normal mb-5">
-                  {word.definition}
-                </p>
-              )}
-
-              {components.showExample && word.example && (
-                <p className="text-xs italic text-stone-300/90 font-cormorant pl-3 border-l border-amber-400/50 mb-5">
-                  "{word.example}"
-                </p>
-              )}
             </div>
 
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              <div className="lg:col-span-8">
+                {components.showWord && (
+                  <h1 className={`${getFontFamilyClass()} ${getWordSizeClass()} font-bold text-stone-100 leading-tight mb-2 capitalize text-glow-subtle`}>
+                    {word.word}
+                  </h1>
+                )}
+
+                {(components.showPartOfSpeech || components.showPhonetics) && (
+                  <div className="flex items-center gap-3 text-sm text-stone-300 mb-5 font-editorial-body italic">
+                    {components.showPartOfSpeech && (
+                      <span className="font-sans-ui not-italic text-xs tracking-wider uppercase text-amber-300/90 font-semibold">
+                        {formatPartOfSpeech(word.part_of_speech)}
+                      </span>
+                    )}
+                    {components.showPartOfSpeech && components.showPhonetics && pronunciationStyle !== 'off' && pronunciationStyle !== 'audio_only' && (
+                      <span className="text-stone-500" aria-hidden="true">·</span>
+                    )}
+                    {renderPronunciationGuide()}
+                    {components.showAudioButton && (
+                      <button
+                        onClick={handlePronounce}
+                        className="p-1 text-stone-400 hover:text-amber-300 transition-colors rounded-full hover:bg-white/10"
+                        title="Pronounce word"
+                      >
+                        <Volume2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {components.showDefinition && (
+                  <div className="mb-6">
+                    <p className={`font-cormorant ${isImmersive ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl'} text-stone-100 leading-relaxed font-normal first-letter:text-4xl first-letter:font-serif first-letter:font-bold first-letter:text-amber-300 first-letter:float-left first-letter:mr-2`}>
+                      {word.definition}
+                    </p>
+                  </div>
+                )}
+
+                {components.showExample && word.example && (
+                  <div className="pl-4 border-l-2 border-amber-400/40 text-sm italic text-stone-300/90 font-cormorant my-4">
+                    "{word.example}"
+                  </div>
+                )}
+              </div>
+
+              {/* Margin Notes Column */}
+              <div className="lg:col-span-4 border-t lg:border-t-0 lg:border-l border-white/10 pt-6 lg:pt-0 lg:pl-6 text-xs text-stone-400 font-sans-ui space-y-4">
+                {components.showEtymology && (
+                  <EtymologySection word={word} align="left" />
+                )}
+                {word.origin_language && (
+                  <div>
+                    <span className="text-amber-300/90 font-semibold uppercase tracking-wider block mb-1">
+                      Origin Classification
+                    </span>
+                    <p className="leading-relaxed text-stone-300/90">{word.origin_language}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* LAYOUT PRESET 3: ZENITH MINIMAL (Maximum negative space & typographic focus) */}
+      {/* ========================================================================= */}
+      {layoutStyle === 'zenith_minimal' && (
+        <div className="flex-1 flex flex-col justify-center w-full transition-all duration-500 -translate-y-[45px] sm:-translate-y-[50px]">
+          <div
+            className={`w-full ${
+              isImmersive
+                ? 'max-w-4xl xl:max-w-5xl 2xl:max-w-6xl'
+                : 'max-w-3xl'
+            } transition-all duration-500 py-8 mx-auto ${
+              isZenithRight
+                ? 'lg:mx-0 lg:ml-auto lg:mr-[7vw] xl:mr-[10vw] 2xl:mr-[13vw] text-center lg:text-right'
+                : 'lg:mx-0 lg:mr-auto lg:ml-[7vw] xl:ml-[10vw] 2xl:ml-[13vw] text-center lg:text-left'
+            }`}
+          >
+            <div className={`flex items-center gap-2.5 mb-4 text-xs font-sans-ui ${
+              isZenithRight ? 'justify-center lg:justify-end' : 'justify-center lg:justify-start'
+            }`}>
+              {components.showGistBadge && (
+                <div className="inline-flex items-center gap-1.5 uppercase tracking-widest text-amber-300/80 font-medium">
+                  {renderGistIcon()}
+                  <span>{gistInfo.label}</span>
+                </div>
+              )}
+              <div className="inline-flex items-center gap-2 ml-2">
+                {renderScaleButton()}
+                <button
+                  onClick={onToggleFavorite}
+                  className={`transition-colors p-1 ${isFavorite ? 'text-amber-400' : 'text-stone-400 hover:text-stone-200'}`}
+                  title={isFavorite ? 'Saved in favorites' : 'Save to favorites'}
+                >
+                  {isFavorite ? <BookmarkCheck className="w-4 h-4 fill-amber-400" /> : <Bookmark className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {components.showWord && (
+              <h1 className={`${getFontFamilyClass()} ${getWordSizeClass()} font-bold text-stone-100 mb-4 capitalize text-glow-gold drop-shadow-md`}>
+                {word.word}
+              </h1>
+            )}
+
+            {(components.showPartOfSpeech || components.showPhonetics) && (
+              <div className={`flex items-center gap-3 text-sm text-stone-300 mb-6 font-sans-ui ${
+                isZenithRight ? 'justify-center lg:justify-end' : 'justify-center lg:justify-start'
+              }`}>
+                {components.showPartOfSpeech && (
+                  <span className="text-xs uppercase tracking-widest text-amber-300 font-semibold">
+                    {formatPartOfSpeech(word.part_of_speech)}
+                  </span>
+                )}
+                {components.showPartOfSpeech && components.showPhonetics && pronunciationStyle !== 'off' && pronunciationStyle !== 'audio_only' && (
+                  <span className="text-stone-500" aria-hidden="true">·</span>
+                )}
+                {renderPronunciationGuide()}
+                {components.showAudioButton && (
+                  <button
+                    onClick={handlePronounce}
+                    className="text-stone-400 hover:text-amber-300 transition-colors"
+                    title="Pronounce word"
+                  >
+                    <Volume2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {components.showDefinition && (
+              <p className={`font-cormorant ${isImmersive ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'} text-stone-100 max-w-2xl leading-relaxed font-light drop-shadow ${
+                isZenithRight ? 'mx-auto lg:ml-auto lg:mr-0' : 'mx-auto lg:mr-auto lg:ml-0'
+              }`}>
+                {word.definition}
+              </p>
+            )}
+
             {components.showEtymology && (
-              <EtymologySection word={word} align="left" />
+              <div className={isZenithRight ? 'lg:text-right' : 'lg:text-left'}>
+                <EtymologySection word={word} align={isZenithRight ? 'left' : 'left'} />
+              </div>
             )}
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* LAYOUT PRESET: BROADSHEET (Dual column historical folio)                   */}
+      {/* LAYOUT PRESET 4: SPLIT CURATORIAL (Art showcase on left, Lexicon on right) */}
       {/* ========================================================================= */}
-      {layoutStyle === 'broadsheet' && (
-        <div
-          className={`w-full max-w-4xl rounded-2xl p-8 sm:p-12 border ${
-            isTranslucent ? 'border-white/20 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]' : 'border-white/10 shadow-2xl'
-          } transition-all duration-300 text-left`}
-          style={{ backgroundColor: `rgba(18, 16, 14, ${effectiveOpacity})` }}
-        >
-          <div className="border-b-2 border-stone-100/20 pb-4 mb-6 flex items-center justify-between">
-            <span className="font-cinzel text-xs tracking-widest uppercase text-stone-400">The Scholastic Gazette</span>
-            <span className="font-mono-data text-xs text-amber-300/90">{dateString}</span>
-          </div>
-
-          {components.showWord && (
-            <h1 className={`${getFontFamilyClass()} text-5xl sm:text-6xl lg:text-7xl font-black text-stone-100 leading-none mb-3 capitalize text-glow-gold`}>
-              {word.word}
-            </h1>
-          )}
-
-          <div className="flex items-center gap-3 text-xs text-stone-300 uppercase tracking-widest font-sans-ui mb-6 pb-4 border-b border-white/10">
-            {components.showPartOfSpeech && <span>{formatPartOfSpeech(word.part_of_speech)}</span>}
-            {renderPronunciationGuide()}
-            {components.showAudioButton && (
-              <button onClick={handlePronounce} className="text-amber-300">
-                <Volume2 className="w-3.5 h-3.5" />
-              </button>
-            )}
-            <span className="ml-auto text-amber-300/80">{gistInfo.label}</span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-stone-200">
-            <div>
-              <span className="text-xs uppercase font-sans-ui tracking-wider text-amber-300/80 block mb-1">Definition</span>
-              <p className="font-cormorant text-xl leading-relaxed text-stone-100">{word.definition}</p>
+      {layoutStyle === 'split_curatorial' && (
+        <div className="flex-1 flex flex-col justify-end w-full transition-all duration-500 mb-[70px] sm:mb-[95px] 2xl:mb-[105px]">
+          <div
+            className={`w-full ${
+              isImmersive
+                ? 'max-w-5xl xl:max-w-6xl 2xl:max-w-[1700px]'
+                : 'max-w-4xl xl:max-w-5xl'
+            } rounded-2xl overflow-hidden border ${
+              isTranslucent ? 'border-white/20 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]' : 'border-white/10 shadow-2xl'
+            } transition-all duration-500 grid grid-cols-1 md:grid-cols-12 mx-auto lg:mx-0 lg:ml-[3vw] xl:ml-[4vw] 2xl:ml-[5vw] lg:mr-auto`}
+            style={{ backgroundColor: `rgba(18, 16, 14, ${effectiveOpacity})` }}
+          >
+            {/* Left Art Plate */}
+            <div className="md:col-span-5 relative min-h-[260px] md:min-h-[460px] 2xl:min-h-[520px] overflow-hidden group">
+              <img
+                src={artwork.url}
+                alt={artwork.title}
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent flex flex-col justify-end p-5 text-left">
+                <span className="text-[10px] font-mono-data tracking-widest uppercase text-amber-300/90 mb-1">
+                  Complementary Masterwork
+                </span>
+                <p className="text-sm font-serif font-medium text-stone-100 line-clamp-1">{artwork.title}</p>
+                <p className="text-xs text-stone-400 font-sans-ui">{artwork.artist} {artwork.year && `(${artwork.year})`}</p>
+              </div>
             </div>
-            <div>
+
+            {/* Right Lexicon Details */}
+            <div className={`md:col-span-7 ${isImmersive ? 'p-6 sm:p-12 2xl:p-14' : 'p-6 sm:p-10'} flex flex-col justify-between text-left`}>
+              <div>
+                <div className="flex items-center justify-between gap-4 mb-4 text-xs text-stone-400 font-sans-ui border-b border-white/10 pb-3">
+                  {components.showGistBadge && (
+                    <span className="inline-flex items-center gap-1.5 text-amber-300 font-medium">
+                      {renderGistIcon()}
+                      <span>{gistInfo.label}</span>
+                    </span>
+                  )}
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                    {renderScaleButton()}
+                    {renderOpacityButton()}
+                    <button
+                      onClick={onToggleFavorite}
+                      className={`transition-colors ${isFavorite ? 'text-amber-400' : 'text-stone-400 hover:text-stone-200'}`}
+                      title={isFavorite ? 'Saved in favorites' : 'Save to favorites'}
+                    >
+                      {isFavorite ? <BookmarkCheck className="w-4 h-4 fill-amber-400" /> : <Bookmark className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {components.showWord && (
+                  <h1 className={`${getFontFamilyClass()} ${getWordSizeClass()} font-bold text-stone-100 leading-tight mb-2 capitalize`}>
+                    {word.word}
+                  </h1>
+                )}
+
+                {(components.showPartOfSpeech || components.showPhonetics) && (
+                  <div className="flex items-center gap-2.5 text-sm text-stone-300 mb-5">
+                    {components.showPartOfSpeech && (
+                      <span className="font-sans-ui text-xs uppercase tracking-wider text-amber-300/90 font-semibold">
+                        {formatPartOfSpeech(word.part_of_speech)}
+                      </span>
+                    )}
+                    {components.showPartOfSpeech && components.showPhonetics && pronunciationStyle !== 'off' && pronunciationStyle !== 'audio_only' && (
+                      <span className="text-stone-500" aria-hidden="true">·</span>
+                    )}
+                    {renderPronunciationGuide()}
+                    {components.showAudioButton && (
+                      <button onClick={handlePronounce} className="text-stone-400 hover:text-amber-300">
+                        <Volume2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {components.showDefinition && (
+                  <p className={`font-cormorant ${isImmersive ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl'} text-stone-100 leading-relaxed font-normal mb-5`}>
+                    {word.definition}
+                  </p>
+                )}
+
+                {components.showExample && word.example && (
+                  <p className="text-xs italic text-stone-300/90 font-cormorant pl-3 border-l border-amber-400/50 mb-5">
+                    "{word.example}"
+                  </p>
+                )}
+              </div>
+
               {components.showEtymology && (
                 <EtymologySection word={word} align="left" />
               )}
-              {word.example && (
-                <p className="text-xs italic font-cormorant text-stone-400 mt-3">"{word.example}"</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* LAYOUT PRESET 5: BROADSHEET (Dual column historical folio)                 */}
+      {/* ========================================================================= */}
+      {layoutStyle === 'broadsheet' && (
+        <div className="flex-1 flex flex-col justify-center w-full transition-all duration-500 -translate-y-12 sm:-translate-y-16 2xl:-translate-y-20">
+          <div
+            className={`w-full ${
+              isImmersive
+                ? 'max-w-5xl xl:max-w-6xl 2xl:max-w-[1550px] p-8 sm:p-12 2xl:p-16'
+                : 'max-w-4xl p-8 sm:p-12'
+            } rounded-2xl border ${
+              isTranslucent ? 'border-white/20 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]' : 'border-white/10 shadow-2xl'
+            } transition-all duration-500 text-left mx-auto lg:mx-0 lg:ml-[13vw] xl:ml-[15vw] 2xl:ml-[17vw] lg:mr-auto`}
+            style={{ backgroundColor: `rgba(18, 16, 14, ${effectiveOpacity})` }}
+          >
+            <div className="border-b-2 border-stone-100/20 pb-4 mb-6 flex items-center justify-between gap-4 flex-wrap">
+              <span className="font-cinzel text-xs tracking-widest uppercase text-stone-400">The Scholastic Gazette</span>
+              <div className="flex items-center gap-2.5">
+                <span className="font-mono-data text-xs text-amber-300/90 mr-1">{dateString}</span>
+                {renderScaleButton()}
+                {renderOpacityButton()}
+              </div>
+            </div>
+
+            {components.showWord && (
+              <h1 className={`${getFontFamilyClass()} text-5xl sm:text-6xl lg:text-7xl font-black text-stone-100 leading-none mb-3 capitalize text-glow-gold`}>
+                {word.word}
+              </h1>
+            )}
+
+            <div className="flex items-center gap-3 text-xs text-stone-300 uppercase tracking-widest font-sans-ui mb-6 pb-4 border-b border-white/10">
+              {components.showPartOfSpeech && <span>{formatPartOfSpeech(word.part_of_speech)}</span>}
+              {renderPronunciationGuide()}
+              {components.showAudioButton && (
+                <button onClick={handlePronounce} className="text-amber-300">
+                  <Volume2 className="w-3.5 h-3.5" />
+                </button>
               )}
+              <span className="ml-auto text-amber-300/80">{gistInfo.label}</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-stone-200">
+              <div>
+                <span className="text-xs uppercase font-sans-ui tracking-wider text-amber-300/80 block mb-1">Definition</span>
+                <p className={`font-cormorant ${isImmersive ? 'text-2xl' : 'text-xl'} leading-relaxed text-stone-100`}>{word.definition}</p>
+              </div>
+              <div>
+                {components.showEtymology && (
+                  <EtymologySection word={word} align="left" />
+                )}
+                {word.example && (
+                  <p className="text-xs italic font-cormorant text-stone-400 mt-3">"{word.example}"</p>
+                )}
+              </div>
             </div>
           </div>
         </div>

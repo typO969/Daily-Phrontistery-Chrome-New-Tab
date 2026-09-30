@@ -63,12 +63,35 @@ async function generateIconPngBlob(size: number): Promise<Blob> {
 
 /**
  * Builds and downloads a 100% Manifest V3 CSP-compliant Chrome Extension package.
- * Guaranteed zero inline scripts, valid PNG icons (16, 48, 128), and standalone styling.
+ * Pre-compiled, fully self-contained, 100% offline, with zero external redirects.
  */
 export async function downloadChromeExtensionPackage(): Promise<void> {
+  // 1. Prioritize downloading the complete pre-built standalone extension bundle
+  // (contains compiled React app, assets, CSS, icons, and zero-redirect manifest)
+  try {
+    const res = await fetch('./daily-phrontistery-extension.zip');
+    if (res.ok) {
+      const blob = await res.blob();
+      if (blob.size > 10000) {
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = 'daily-phrontistery-chrome-extension.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
+        return;
+      }
+    }
+  } catch (err) {
+    console.debug('Direct zip download fell back to client-side packaging:', err);
+  }
+
+  // 2. Client-side fallback packager
   const zip = new JSZip();
 
-  // 1. Manifest V3 configuration
+  // Manifest V3 configuration
   const manifest = {
     manifest_version: 3,
     name: 'Daily Phrontistery — Word of the Day New Tab',
@@ -89,7 +112,7 @@ export async function downloadChromeExtensionPackage(): Promise<void> {
 
   zip.file('manifest.json', JSON.stringify(manifest, null, 2));
 
-  // 2. Real PNG Icons for 16x16, 48x48, 128x128
+  // Real PNG Icons for 16x16, 48x48, 128x128
   try {
     const [png16, png48, png128] = await Promise.all([
       generateIconPngBlob(16),
@@ -104,7 +127,7 @@ export async function downloadChromeExtensionPackage(): Promise<void> {
     console.error('Error generating canvas icons, fallback SVG saved', err);
   }
 
-  // 3. SVG vector icon for high-DPI displays
+  // SVG vector icon for high-DPI displays
   const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
     <rect width="128" height="128" rx="26" fill="#0c1222" />
     <text x="14" y="97" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="64" font-weight="900" fill="#ffff00">d</text>
@@ -114,8 +137,7 @@ export async function downloadChromeExtensionPackage(): Promise<void> {
   </svg>`;
   zip.file('icons/icon.svg', iconSvg);
 
-  // 4. index.html (Zero inline script tags - 100% Chrome CSP Compliant)
-  const currentUrl = window.location.href;
+  // Standalone offline index.html (self-contained reader without external server)
   const standaloneHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -126,32 +148,15 @@ export async function downloadChromeExtensionPackage(): Promise<void> {
 </head>
 <body>
   <div class="loader-card">
-    <div class="spinner"></div>
     <h1 class="title">The Daily Phrontistery</h1>
-    <p class="subtitle">Opening your contemplative thinking-place...</p>
-    <a href="${currentUrl}" id="direct-link" class="btn">Open Phrontistery &rarr;</a>
+    <p class="subtitle">Please load the fully compiled extension folder containing the assets directory.</p>
+    <p class="note">See README_INSTALL.txt for simple 3-step setup.</p>
   </div>
-  <script src="newtab.js"></script>
 </body>
 </html>`;
   zip.file('index.html', standaloneHtml);
 
-  // 5. Separate external newtab.js (Fixes "Refused to execute inline script")
-  const newtabJs = `// Daily Phrontistery — Chrome Extension New Tab Controller
-(function() {
-  var targetUrl = ${JSON.stringify(currentUrl)};
-  
-  // Instant replacement navigation
-  try {
-    window.location.replace(targetUrl);
-  } catch (err) {
-    window.location.href = targetUrl;
-  }
-})();
-`;
-  zip.file('newtab.js', newtabJs);
-
-  // 6. Separate external style.css (Zero inline styles)
+  // Separate external style.css
   const styleCss = `* {
   box-sizing: border-box;
 }
@@ -180,60 +185,24 @@ body {
   width: 90%;
 }
 
-.spinner {
-  width: 44px;
-  height: 44px;
-  margin: 0 auto 20px auto;
-  border: 3px solid rgba(245, 158, 11, 0.15);
-  border-top-color: #f59e0b;
-  border-radius: 50%;
-  animation: phrontisterySpin 0.75s linear infinite;
-}
-
-@keyframes phrontisterySpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .title {
-  font-size: 16px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: #f59e0b;
-  margin: 0 0 10px 0;
-  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: 0.05em;
+  margin: 0 0 12px 0;
+  color: #fbbf24;
 }
 
 .subtitle {
   font-size: 13px;
-  color: #a8a29e;
-  margin: 0 0 24px 0;
-  font-style: italic;
-  line-height: 1.4;
+  color: #d6d3d1;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
 }
 
-.btn {
-  display: inline-block;
-  font-size: 12px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #0b0c10;
-  background-color: #f59e0b;
-  padding: 10px 22px;
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: 600;
-  transition: background-color 0.2s ease, transform 0.1s ease;
-}
-
-.btn:hover {
-  background-color: #fbbf24;
-}
-
-.btn:active {
-  transform: scale(0.98);
+.note {
+  font-size: 11px;
+  color: #78716c;
+  margin: 0;
 }
 `;
   zip.file('style.css', styleCss);
