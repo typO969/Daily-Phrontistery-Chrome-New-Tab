@@ -95,7 +95,7 @@ export async function downloadChromeExtensionPackage(): Promise<void> {
   const manifest = {
     manifest_version: 3,
     name: 'Daily Phrontistery — Word of the Day New Tab',
-    version: '1.0.0',
+    version: '1.9.7',
     description: 'Replaces your new tab page with rare words, semantic fine art backgrounds, and scholarly etymology.',
     chrome_url_overrides: {
       newtab: 'index.html',
@@ -108,6 +108,12 @@ export async function downloadChromeExtensionPackage(): Promise<void> {
     content_security_policy: {
       extension_pages: "script-src 'self'; object-src 'self'",
     },
+    web_accessible_resources: [
+      {
+        resources: ['huge-word-list.json'],
+        matches: ['<all_urls>'],
+      },
+    ],
   };
 
   zip.file('manifest.json', JSON.stringify(manifest, null, 2));

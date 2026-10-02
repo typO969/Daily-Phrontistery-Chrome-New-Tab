@@ -5,6 +5,7 @@ import {
   getDailyWord,
   getFreshWord,
   enrichWord,
+  loadExternalWordList,
 } from './data/phrontisteryWords';
 import { GIST_THEMES, getArtworkForGist } from './utils/themeAndGist';
 import { SVG_ARTWORKS } from './utils/svgArtworks';
@@ -97,6 +98,15 @@ export default function App() {
       console.error('Failed to persist settings', e);
     }
   }, [settings]);
+
+  // If huge-word-list.json is present in the root folder / extension, hydrate on mount
+  useEffect(() => {
+    loadExternalWordList().then((words) => {
+      if (settings.displayMode === 'daily') {
+        setCurrentWord(getDailyWord(new Date(), words));
+      }
+    });
+  }, [settings.displayMode]);
 
   // Current semantic theme
   const theme = useMemo(() => {

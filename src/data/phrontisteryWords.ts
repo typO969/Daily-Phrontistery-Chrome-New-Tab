@@ -61,6 +61,57 @@ export function getAllPhrontisteryWords(): PhrontisteryWord[] {
   return cachedWords;
 }
 
+let isExternalLoading = false;
+
+/**
+ * Loads huge-word-list.json if present in the extension root or web environment.
+ * If present, merges or replaces with custom dictionary.
+ */
+export async function loadExternalWordList(): Promise<PhrontisteryWord[]> {
+  if (isExternalLoading) return getAllPhrontisteryWords();
+  isExternalLoading = true;
+
+  try {
+    // Check Chrome Extension chrome.runtime.getURL, or relative path
+    let url = './huge-word-list.json';
+    const chromeApi = (globalThis as unknown as { chrome?: { runtime?: { getURL?: (path: string) => string } } }).chrome;
+    if (chromeApi?.runtime?.getURL) {
+      try {
+        url = chromeApi.runtime.getURL('huge-word-list.json');
+      } catch {
+        url = './huge-word-list.json';
+      }
+    }
+
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        console.log(`[Phrontistery] Loaded ${data.length} words from ${url}`);
+        const customWords: PhrontisteryWord[] = [];
+        try {
+          const stored = localStorage.getItem('phrontistery_custom_words');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) customWords.push(...parsed);
+          }
+        } catch {}
+
+        const externalEnriched = data.map(enrichWord);
+        cachedWords = [...customWords, ...externalEnriched];
+        return cachedWords;
+      }
+    }
+  } catch (err) {
+    // Expected in standalone mode when huge-word-list.json is not placed separately
+    console.debug('[Phrontistery] External word list not loaded, falling back to bundled dataset:', err);
+  } finally {
+    isExternalLoading = false;
+  }
+
+  return getAllPhrontisteryWords();
+}
+
 /**
  * Deterministically retrieves the Daily Word based on year, month, and day.
  * Ensures that all users see the exact same word on the same date.

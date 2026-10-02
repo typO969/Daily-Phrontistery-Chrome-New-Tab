@@ -34,6 +34,19 @@ async function syncAndPackageExtension() {
     }
   }
 
+  // Also copy huge-word-list.json to extension root for standalone CRX distribution
+  const candidates = [
+    path.join(distDir, 'huge-word-list.json'),
+    path.join(publicDir, 'huge-word-list.json'),
+    path.join(root, 'huge-word-list.json')
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      fs.copyFileSync(candidate, path.join(extDir, 'huge-word-list.json'));
+      break;
+    }
+  }
+
   // 2. Package everything into a standalone zip
   const zip = new JSZip();
   function addDir(dirPath, zipFolder) {
