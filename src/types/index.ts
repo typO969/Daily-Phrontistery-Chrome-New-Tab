@@ -80,6 +80,8 @@ export type DisplayMode = 'daily' | 'random_every_tab';
 
 export type BoxScale = 'classic' | 'immersive';
 
+export type BoxAlignment = 'archetype' | 'center';
+
 export interface ComponentVisibility {
   showWord: boolean;
   showPhonetics: boolean;
@@ -101,6 +103,7 @@ export interface AppSettings {
   fontFamily: 'cormorant' | 'playfair' | 'cinzel' | 'instrument' | 'sans';
   wordSize: 'compact' | 'balanced' | 'monumental';
   boxScale?: BoxScale; // 'immersive' (1.5x up to 93% for 4K / wide screens) vs 'classic' (compact)
+  boxAlignment?: BoxAlignment; // 'archetype' (signature layout position), 'left', 'center', 'right'
   animationSpeed: 'off' | 'gentle' | 'normal';
   enableAmbientParticles: boolean;
   enableAmbientSound: boolean;

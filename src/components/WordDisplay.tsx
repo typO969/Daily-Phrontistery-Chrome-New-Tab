@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Volume2, Bookmark, BookmarkCheck, Search, Sparkles, Compass, Feather, Trees, Moon, Columns, BookOpen, Activity, Brain, Crown, ExternalLink, Maximize2, Minimize2 } from 'lucide-react';
-import { PhrontisteryWord, ColorTheme, LayoutStyle, ComponentVisibility, ArtworkBackground, PronunciationStyle, BoxScale } from '../types';
+import { Volume2, Bookmark, BookmarkCheck, Search, Sparkles, Compass, Feather, Trees, Moon, Columns, BookOpen, Activity, Brain, Crown, ExternalLink, Maximize2, Minimize2, Monitor } from 'lucide-react';
+import { PhrontisteryWord, ColorTheme, LayoutStyle, ComponentVisibility, ArtworkBackground, PronunciationStyle, BoxScale, BoxAlignment } from '../types';
 import { formatPartOfSpeech, GIST_LABELS } from '../utils/themeAndGist';
 import { speakWord } from '../utils/audioSynth';
 import { generatePhoneticRespelling, generateApproxIpa } from '../utils/pronunciationService';
@@ -13,6 +13,7 @@ interface WordDisplayProps {
   fontFamily: 'cormorant' | 'playfair' | 'cinzel' | 'instrument' | 'sans';
   wordSize: 'compact' | 'balanced' | 'monumental';
   boxScale?: BoxScale;
+  boxAlignment?: BoxAlignment;
   onToggleBoxScale?: () => void;
   overlayOpacity: number;
   frameOpacity?: number;
@@ -102,6 +103,7 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
   fontFamily,
   wordSize,
   boxScale = 'immersive',
+  boxAlignment = 'archetype',
   onToggleBoxScale,
   overlayOpacity,
   frameOpacity,
@@ -130,7 +132,7 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
 
   const gistInfo = word.gist ? GIST_LABELS[word.gist] : GIST_LABELS.linguistics_literature;
 
-  // Scale toggle button for card headers
+  // Scale toggle button for card headers (explicitly labelled 4K Scale)
   const renderScaleButton = () => {
     if (!onToggleBoxScale) return null;
     return (
@@ -141,13 +143,13 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
       >
         {isImmersive ? (
           <>
-            <Minimize2 className="w-3 h-3 text-amber-300" />
-            <span>1.5x Full</span>
+            <Monitor className="w-3 h-3 text-amber-300" />
+            <span>4K Scale: ON</span>
           </>
         ) : (
           <>
-            <Maximize2 className="w-3 h-3 text-stone-400" />
-            <span>Classic</span>
+            <Monitor className="w-3 h-3 text-stone-400" />
+            <span>4K Scale: OFF</span>
           </>
         )}
       </button>
@@ -265,15 +267,29 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
 
     switch (wordSize) {
       case 'compact':
+        if (isImmersive) {
+          if (len >= 14) return 'text-3xl sm:text-4xl lg:text-5xl 2xl:text-6xl';
+          return 'text-4xl sm:text-5xl lg:text-6xl 2xl:text-7xl';
+        }
         if (len >= 14) return 'text-3xl sm:text-4xl lg:text-5xl';
         return 'text-4xl sm:text-5xl lg:text-6xl';
       case 'monumental':
+        if (isImmersive) {
+          if (len >= 16) return 'text-5xl sm:text-6xl lg:text-7xl 2xl:text-8xl tracking-tight';
+          if (len >= 12) return 'text-6xl sm:text-7xl lg:text-8xl 2xl:text-9xl tracking-tight';
+          if (len >= 8) return 'text-6xl sm:text-8xl lg:text-9xl 2xl:text-[10rem] tracking-tight';
+          return 'text-7xl sm:text-8xl lg:text-9xl 2xl:text-[11.5rem] tracking-tight';
+        }
         if (len >= 16) return 'text-4xl sm:text-5xl lg:text-6xl 2xl:text-7xl tracking-tight';
         if (len >= 12) return 'text-5xl sm:text-6xl lg:text-7xl 2xl:text-8xl tracking-tight';
         if (len >= 8) return 'text-5xl sm:text-6xl lg:text-8xl 2xl:text-9xl tracking-tight';
         return 'text-6xl sm:text-7xl lg:text-9xl tracking-tight';
       case 'balanced':
       default:
+        if (isImmersive) {
+          if (len >= 14) return 'text-4xl sm:text-5xl lg:text-6xl 2xl:text-7xl tracking-normal';
+          return 'text-5xl sm:text-6xl lg:text-7xl 2xl:text-8xl tracking-normal';
+        }
         if (len >= 14) return 'text-4xl sm:text-5xl lg:text-6xl tracking-normal';
         return 'text-5xl sm:text-6xl lg:text-7xl tracking-normal';
     }
@@ -343,6 +359,78 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
     window.location.href = targetUrl;
   };
 
+  // Word Box width scaling:
+  // - Full & More Immersive Display Box: expands by 1.5x up to ~93% of the browser real-estate on 4K.
+  // - Smaller Display Box: matches the original classic proportions from mockups #2, #3, #4, #5.
+  const getCardWidthClass = (preset: LayoutStyle) => {
+    if (isImmersive) {
+      return 'w-full max-w-[93vw] 2xl:max-w-[93vw] p-8 sm:p-12 md:p-14 2xl:p-16 3xl:p-20';
+    }
+    switch (preset) {
+      case 'museum_placard':
+        return 'w-full max-w-3xl lg:max-w-4xl p-6 sm:p-10 md:p-12';
+      case 'monograph':
+        // Mockup #2.png: clean ~48vw box
+        return 'w-full max-w-3xl lg:max-w-4xl xl:max-w-[48vw] p-8 sm:p-12';
+      case 'zenith_minimal':
+        // Mockup #3.png: clean ~38vw typographic block
+        return 'w-full max-w-2xl lg:max-w-3xl xl:max-w-[40vw] py-8';
+      case 'split_curatorial':
+        // Mockup #4.png: clean ~54vw dual plate
+        return 'w-full max-w-4xl lg:max-w-5xl xl:max-w-[54vw]';
+      case 'broadsheet':
+        // Mockup #5.png: clean ~52vw gazette folio
+        return 'w-full max-w-4xl lg:max-w-5xl xl:max-w-[52vw] p-8 sm:p-12';
+      default:
+        return 'w-full max-w-4xl p-8';
+    }
+  };
+
+  // Dynamic placement classes based on layout archetype and user-chosen boxAlignment:
+  // - 'archetype': Signature bespoke placement matching user mockups #2, #3, #4, #5
+  // - 'center': Classic centered layout on all axes
+  const getCardPlacementClasses = (preset: LayoutStyle) => {
+    if (isImmersive) {
+      return 'mx-auto text-left';
+    }
+
+    if (boxAlignment === 'center') {
+      return 'mx-auto text-center';
+    }
+
+    // Default 'archetype' signature placements matching user mockups #2, #3, #4, #5:
+    switch (preset) {
+      case 'museum_placard':
+        // 1: MUSEUM PLACARD: keep it all centered
+        return 'mx-auto text-center';
+
+      case 'monograph':
+        // 2: EDITORIAL MONOGRAPH (Mockup #2.png):
+        // "live moderately left of center (the box's center should be around at about 1/3)"
+        return 'mr-auto ml-4 sm:ml-8 md:ml-12 lg:ml-[12vw] xl:ml-[14vw] 2xl:ml-[15vw] text-left';
+
+      case 'zenith_minimal':
+        // 3: ZENITH MINIMALIST (Mockup #3.png):
+        // "horizontally it needs to be centered at 1/3 left or 1/3 right of true center"
+        return isZenithRight
+          ? 'ml-auto mr-4 sm:mr-8 md:mr-12 lg:mr-[14vw] xl:mr-[18vw] 2xl:mr-[20vw] text-left sm:text-right'
+          : 'mr-auto ml-4 sm:ml-8 md:ml-12 lg:ml-[14vw] xl:ml-[18vw] 2xl:ml-[20vw] text-left';
+
+      case 'split_curatorial':
+        // 4: SPLIT CURATORIAL (Mockup #4.png):
+        // "slightly more left than #2 (monograph)"
+        return 'mr-auto ml-3 sm:ml-6 md:ml-8 lg:ml-[7vw] xl:ml-[9vw] 2xl:ml-[10vw] text-left';
+
+      case 'broadsheet':
+        // 5: BROADSHEET FOLIO (Mockup #5.png):
+        // "rest somewhere between 1/3 and true center of center"
+        return 'mr-auto ml-4 sm:ml-8 md:ml-14 lg:ml-[14vw] xl:ml-[16vw] 2xl:ml-[18vw] text-left';
+
+      default:
+        return 'mx-auto';
+    }
+  };
+
   // Time & Date format for the new tab experience
   const now = new Date();
   const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -369,13 +457,9 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
       {layoutStyle === 'museum_placard' && (
         <div className="flex-1 flex flex-col justify-center items-center w-full my-auto transition-all duration-500">
           <div
-            className={`w-full ${
-              isImmersive
-                ? 'max-w-4xl xl:max-w-5xl 2xl:max-w-6xl p-8 sm:p-12 md:p-14 2xl:p-16'
-                : 'max-w-3xl p-6 sm:p-10 md:p-12'
-            } rounded-2xl border ${
+            className={`${getCardWidthClass('museum_placard')} rounded-2xl border ${
               isTranslucent ? 'border-white/20 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]' : 'border-white/10 shadow-2xl'
-            } transition-all duration-500 relative text-center mx-auto`}
+            } transition-all duration-500 relative ${getCardPlacementClasses('museum_placard')}`}
             style={{ backgroundColor: `rgba(18, 16, 14, ${effectiveOpacity})` }}
           >
             {/* Top category & actions */}
@@ -442,8 +526,8 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
 
             {/* Definition */}
             {components.showDefinition && (
-              <div className={`mb-8 ${isImmersive ? 'max-w-3xl' : 'max-w-xl'} mx-auto`}>
-                <p className={`font-cormorant ${isImmersive ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl'} text-stone-100 leading-relaxed font-normal`}>
+              <div className={`mb-8 ${isImmersive ? 'max-w-4xl' : 'max-w-xl'} mx-auto`}>
+                <p className={`font-cormorant ${isImmersive ? 'text-2xl sm:text-3xl 2xl:text-4xl' : 'text-xl sm:text-2xl'} text-stone-100 leading-relaxed font-normal`}>
                   {word.definition}
                 </p>
               </div>
@@ -468,15 +552,11 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
       {/* LAYOUT PRESET 2: MONOGRAPH (Editorial left-anchored book layout)           */}
       {/* ========================================================================= */}
       {layoutStyle === 'monograph' && (
-        <div className="flex-1 flex flex-col justify-center w-full transition-all duration-500 lg:translate-y-8 xl:translate-y-12 2xl:translate-y-16">
+        <div className={`flex-1 flex flex-col justify-center w-full transition-all duration-500 ${boxAlignment === 'center' ? 'my-auto' : 'translate-y-10 sm:translate-y-14 md:translate-y-20 lg:translate-y-24 xl:translate-y-28 2xl:translate-y-36'}`}>
           <div
-            className={`w-full ${
-              isImmersive
-                ? 'max-w-5xl xl:max-w-6xl 2xl:max-w-[1550px] p-8 sm:p-12 2xl:p-16'
-                : 'max-w-4xl p-8 sm:p-12'
-            } rounded-2xl border ${
+            className={`${getCardWidthClass('monograph')} rounded-2xl border ${
               isTranslucent ? 'border-white/20 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]' : 'border-white/10 shadow-2xl'
-            } transition-all duration-500 relative text-left mx-auto lg:mx-0 lg:ml-[7vw] xl:ml-[9vw] 2xl:ml-[11vw] lg:mr-auto`}
+            } transition-all duration-500 relative ${getCardPlacementClasses('monograph')}`}
             style={{ backgroundColor: `rgba(18, 16, 14, ${effectiveOpacity})` }}
           >
             {/* Header Metadata */}
@@ -573,20 +653,16 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
       {/* LAYOUT PRESET 3: ZENITH MINIMAL (Maximum negative space & typographic focus) */}
       {/* ========================================================================= */}
       {layoutStyle === 'zenith_minimal' && (
-        <div className="flex-1 flex flex-col justify-center w-full transition-all duration-500 -translate-y-[45px] sm:-translate-y-[50px]">
+        <div className={`flex-1 flex flex-col justify-center w-full transition-all duration-500 ${boxAlignment === 'center' ? 'my-auto' : '-translate-y-[50px] sm:-translate-y-[50px] 2xl:-translate-y-[60px]'}`}>
           <div
-            className={`w-full ${
-              isImmersive
-                ? 'max-w-4xl xl:max-w-5xl 2xl:max-w-6xl'
-                : 'max-w-3xl'
-            } transition-all duration-500 py-8 mx-auto ${
-              isZenithRight
-                ? 'lg:mx-0 lg:ml-auto lg:mr-[7vw] xl:mr-[10vw] 2xl:mr-[13vw] text-center lg:text-right'
-                : 'lg:mx-0 lg:mr-auto lg:ml-[7vw] xl:ml-[10vw] 2xl:ml-[13vw] text-center lg:text-left'
-            }`}
+            className={`${getCardWidthClass('zenith_minimal')} transition-all duration-500 ${getCardPlacementClasses('zenith_minimal')}`}
           >
             <div className={`flex items-center gap-2.5 mb-4 text-xs font-sans-ui ${
-              isZenithRight ? 'justify-center lg:justify-end' : 'justify-center lg:justify-start'
+              boxAlignment === 'center'
+                ? 'justify-center'
+                : isZenithRight
+                ? 'justify-center sm:justify-end'
+                : 'justify-center sm:justify-start'
             }`}>
               {components.showGistBadge && (
                 <div className="inline-flex items-center gap-1.5 uppercase tracking-widest text-amber-300/80 font-medium">
@@ -658,15 +734,11 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
       {/* LAYOUT PRESET 4: SPLIT CURATORIAL (Art showcase on left, Lexicon on right) */}
       {/* ========================================================================= */}
       {layoutStyle === 'split_curatorial' && (
-        <div className="flex-1 flex flex-col justify-end w-full transition-all duration-500 mb-[70px] sm:mb-[95px] 2xl:mb-[105px]">
+        <div className={`flex-1 flex flex-col ${boxAlignment === 'center' ? 'justify-center my-auto' : 'justify-end mb-[60px] sm:mb-[80px] md:mb-[95px] 2xl:mb-[100px]'} w-full transition-all duration-500`}>
           <div
-            className={`w-full ${
-              isImmersive
-                ? 'max-w-5xl xl:max-w-6xl 2xl:max-w-[1700px]'
-                : 'max-w-4xl xl:max-w-5xl'
-            } rounded-2xl overflow-hidden border ${
+            className={`${getCardWidthClass('split_curatorial')} rounded-2xl overflow-hidden border ${
               isTranslucent ? 'border-white/20 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]' : 'border-white/10 shadow-2xl'
-            } transition-all duration-500 grid grid-cols-1 md:grid-cols-12 mx-auto lg:mx-0 lg:ml-[3vw] xl:ml-[4vw] 2xl:ml-[5vw] lg:mr-auto`}
+            } transition-all duration-500 grid grid-cols-1 md:grid-cols-12 ${getCardPlacementClasses('split_curatorial')}`}
             style={{ backgroundColor: `rgba(18, 16, 14, ${effectiveOpacity})` }}
           >
             {/* Left Art Plate */}
@@ -759,15 +831,11 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
       {/* LAYOUT PRESET 5: BROADSHEET (Dual column historical folio)                 */}
       {/* ========================================================================= */}
       {layoutStyle === 'broadsheet' && (
-        <div className="flex-1 flex flex-col justify-center w-full transition-all duration-500 -translate-y-12 sm:-translate-y-16 2xl:-translate-y-20">
+        <div className={`flex-1 flex flex-col justify-center w-full transition-all duration-500 ${boxAlignment === 'center' ? 'my-auto' : '-translate-y-12 sm:-translate-y-16 md:-translate-y-20 2xl:-translate-y-24'}`}>
           <div
-            className={`w-full ${
-              isImmersive
-                ? 'max-w-5xl xl:max-w-6xl 2xl:max-w-[1550px] p-8 sm:p-12 2xl:p-16'
-                : 'max-w-4xl p-8 sm:p-12'
-            } rounded-2xl border ${
+            className={`${getCardWidthClass('broadsheet')} rounded-2xl border ${
               isTranslucent ? 'border-white/20 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]' : 'border-white/10 shadow-2xl'
-            } transition-all duration-500 text-left mx-auto lg:mx-0 lg:ml-[13vw] xl:ml-[15vw] 2xl:ml-[17vw] lg:mr-auto`}
+            } transition-all duration-500 text-left ${getCardPlacementClasses('broadsheet')}`}
             style={{ backgroundColor: `rgba(18, 16, 14, ${effectiveOpacity})` }}
           >
             <div className="border-b-2 border-stone-100/20 pb-4 mb-6 flex items-center justify-between gap-4 flex-wrap">
@@ -820,7 +888,19 @@ export const WordDisplay: React.FC<WordDisplayProps> = ({
       {components.showSearchBar && (
         <form
           onSubmit={handleSearchSubmit}
-          className="w-full max-w-lg mt-8 relative flex items-center group transition-all"
+          className={`w-full max-w-lg mt-8 relative flex items-center group transition-all ${
+            boxAlignment === 'center' || layoutStyle === 'museum_placard'
+              ? 'mx-auto'
+              : layoutStyle === 'monograph'
+              ? 'mr-auto ml-4 sm:ml-8 md:ml-12 lg:ml-[12vw]'
+              : layoutStyle === 'split_curatorial'
+              ? 'mr-auto ml-3 sm:ml-6 md:ml-8 lg:ml-[7vw]'
+              : layoutStyle === 'broadsheet'
+              ? 'mr-auto ml-4 sm:ml-8 md:ml-14 lg:ml-[14vw]'
+              : isZenithRight
+              ? 'ml-auto mr-4 sm:mr-8 md:mr-12 lg:mr-[14vw]'
+              : 'mr-auto ml-4 sm:ml-8 md:ml-12 lg:ml-[14vw]'
+          }`}
         >
           <div className="relative w-full flex items-center bg-black/40 hover:bg-black/55 focus-within:bg-black/60 border border-white/15 focus-within:border-amber-400/50 rounded-xl px-4 py-2.5 backdrop-blur-md shadow-lg transition-all">
             <Search className="w-4 h-4 text-stone-400 mr-2.5 shrink-0" />

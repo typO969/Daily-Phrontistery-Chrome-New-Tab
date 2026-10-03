@@ -395,6 +395,13 @@ export default function App() {
         isArtFocusMode={isArtFocusMode}
         onToggleArtFocus={() => setIsArtFocusMode(!isArtFocusMode)}
         onOpenColophon={() => setIsColophonOpen(true)}
+        boxScale={settings.boxScale || 'immersive'}
+        onToggleBoxScale={() => {
+          setSettings((p) => ({
+            ...p,
+            boxScale: p.boxScale === 'immersive' ? 'classic' : 'immersive',
+          }));
+        }}
       />
 
       {/* Word of the Day Presentation */}
@@ -411,6 +418,7 @@ export default function App() {
           fontFamily={settings.fontFamily}
           wordSize={settings.wordSize}
           boxScale={settings.boxScale || 'immersive'}
+          boxAlignment={settings.boxAlignment || 'archetype'}
           onToggleBoxScale={() => {
             setSettings((p) => ({
               ...p,

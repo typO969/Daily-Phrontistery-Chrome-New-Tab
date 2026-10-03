@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
-import { X, Sliders, Type, Eye, Palette, Wind, Sparkles, Upload, RotateCcw, Check, LayoutGrid, Volume2, Download, ShieldCheck, Maximize2, Minimize2 } from 'lucide-react';
-import { AppSettings, LayoutStyle, DisplayMode } from '../types';
+import { X, Sliders, Type, Eye, Palette, Wind, Sparkles, Upload, RotateCcw, Check, LayoutGrid, Volume2, Download, ShieldCheck, Maximize2, Minimize2, Monitor, AlignCenter, AlignLeft, AlignRight } from 'lucide-react';
+import { AppSettings, LayoutStyle, DisplayMode, BoxAlignment } from '../types';
 import { downloadChromeExtensionPackage } from '../utils/extensionExporter';
 
 interface LayoutStudioModalProps {
@@ -139,16 +139,88 @@ export const LayoutStudioModal: React.FC<LayoutStudioModalProps> = ({
           </div>
         </div>
 
-        {/* Section 2: Word Box Proportions & Scale (4K & Ultra-wide Screen Display) */}
+        {/* Section 2: Spatial Viewport Alignment */}
+        <div className="mb-6 p-4 rounded-xl bg-white/[0.03] border border-white/10">
+          <label className="text-xs uppercase tracking-wider text-amber-400 font-semibold mb-2.5 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <AlignCenter className="w-3.5 h-3.5" />
+              <span>Spatial Placement & Viewport Alignment</span>
+            </span>
+            <span className="text-[10px] text-stone-400 font-mono-data">
+              Signature asymmetric vs. Classic centered
+            </span>
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              {
+                id: 'archetype',
+                label: 'Signature Archetype',
+                icon: LayoutGrid,
+                desc: 'Bespoke asymmetric placement per layout (Monograph at 1/3 lower-third, Zenith at 1/3, Split Curatorial 100px from bottom, Broadsheet offset).',
+              },
+              {
+                id: 'center',
+                label: 'Classic Centered',
+                icon: AlignCenter,
+                desc: 'Keeps the word box and typography centered in the viewport across all layouts, classic museum style.',
+              },
+            ].map((item) => {
+              const active = (settings.boxAlignment || 'archetype') === item.id;
+              const IconComp = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onUpdateSettings((p) => ({ ...p, boxAlignment: item.id as BoxAlignment }))}
+                  className={`p-3.5 rounded-xl border text-left transition-all ${
+                    active
+                      ? 'border-amber-400 bg-amber-400/15 text-stone-100 shadow-sm ring-1 ring-amber-400/30'
+                      : 'border-white/10 bg-white/5 hover:bg-white/10 text-stone-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-semibold text-xs flex items-center gap-1.5">
+                      <IconComp className={`w-3.5 h-3.5 ${active ? 'text-amber-400' : 'text-stone-400'}`} />
+                      {item.label}
+                    </span>
+                    {active && <Check className="w-4 h-4 text-amber-400 shrink-0" />}
+                  </div>
+                  <span className="text-[11px] text-stone-400 block leading-snug">{item.desc}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Section 3: 4K Display Mode & Word Box Scale */}
         <div className="mb-6 p-4 rounded-xl bg-white/[0.03] border border-white/10">
           <div className="flex items-center justify-between mb-3">
             <label className="text-xs uppercase tracking-wider text-amber-400 font-semibold flex items-center gap-1.5">
-              <Maximize2 className="w-3.5 h-3.5" />
-              <span>Word Box Scale & Viewport Presence</span>
+              <Monitor className="w-3.5 h-3.5" />
+              <span>4K & Ultra-HD Display Mode (1.5x Scale)</span>
             </label>
-            <span className="text-[10px] font-mono-data px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30">
-              4K / Wide Display Ready
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={`text-[10px] font-mono-data px-2 py-0.5 rounded border transition-colors ${
+                (settings.boxScale || 'immersive') === 'immersive'
+                  ? 'bg-amber-400/20 text-amber-300 border-amber-400/40'
+                  : 'bg-white/5 text-stone-400 border-white/10'
+              }`}>
+                {(settings.boxScale || 'immersive') === 'immersive' ? '4K Ultra-HD Active' : 'Classic Scale'}
+              </span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(settings.boxScale || 'immersive') === 'immersive'}
+                  onChange={(e) =>
+                    onUpdateSettings((p) => ({
+                      ...p,
+                      boxScale: e.target.checked ? 'immersive' : 'classic',
+                    }))
+                  }
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-stone-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+              </label>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -162,15 +234,15 @@ export const LayoutStudioModal: React.FC<LayoutStudioModalProps> = ({
             >
               <div className="flex items-center justify-between mb-1.5">
                 <span className="font-semibold text-xs flex items-center gap-1.5">
-                  <Maximize2 className="w-3.5 h-3.5 text-amber-300" />
-                  Grand & Immersive (1.5x / 4K Scale)
+                  <Monitor className="w-3.5 h-3.5 text-amber-300" />
+                  Full & More Immersive Display Box (1.5x / 93%)
                 </span>
                 {(settings.boxScale || 'immersive') === 'immersive' && (
                   <Check className="w-4 h-4 text-amber-400 shrink-0" />
                 )}
               </div>
               <p className="text-[11px] text-stone-400 leading-snug">
-                Expands the word card by ~1.5x (up to 93% browser real-estate). Optimized specifically for 4K and widescreen displays with luxurious typographic presence.
+                Increases word box size by at least 1.5x (up to 93% of browser real-estate on 4K) for a grand, cinematic reading experience.
               </p>
             </button>
 
@@ -185,14 +257,14 @@ export const LayoutStudioModal: React.FC<LayoutStudioModalProps> = ({
               <div className="flex items-center justify-between mb-1.5">
                 <span className="font-semibold text-xs flex items-center gap-1.5">
                   <Minimize2 className="w-3.5 h-3.5 text-stone-400" />
-                  Classic Intimate (Compact Placard)
+                  Smaller Display Box (Classic Placard)
                 </span>
                 {settings.boxScale === 'classic' && (
                   <Check className="w-4 h-4 text-amber-400 shrink-0" />
                 )}
               </div>
               <p className="text-[11px] text-stone-400 leading-snug">
-                Traditional compact gallery placard scale (max-w-3xl / max-w-4xl) with tighter boundaries and centered containment.
+                Traditional compact word box scale (max-w-4xl) with authentic asymmetric anchoring as designed in the layout mockups (#2, #3, #4, #5).
               </p>
             </button>
           </div>

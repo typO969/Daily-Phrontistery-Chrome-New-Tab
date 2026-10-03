@@ -1,6 +1,6 @@
 import React from 'react';
-import { Sparkles, Sliders, Volume2, VolumeX, Shuffle, Bookmark, Download, Calendar, Eye, EyeOff, Info } from 'lucide-react';
-import { DisplayMode, ColorTheme } from '../types';
+import { Sparkles, Sliders, Volume2, VolumeX, Shuffle, Bookmark, Download, Calendar, Eye, EyeOff, Info, Monitor } from 'lucide-react';
+import { DisplayMode, ColorTheme, BoxScale } from '../types';
 
 interface TopBarProps {
   theme: ColorTheme;
@@ -16,6 +16,8 @@ interface TopBarProps {
   favoritesCount: number;
   isArtFocusMode: boolean;
   onToggleArtFocus: () => void;
+  boxScale?: BoxScale;
+  onToggleBoxScale?: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -32,6 +34,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   favoritesCount,
   isArtFocusMode,
   onToggleArtFocus,
+  boxScale = 'immersive',
+  onToggleBoxScale,
 }) => {
   return (
     <header className="relative z-30 flex items-center justify-between px-6 py-4 border-b border-white/10 backdrop-blur-md bg-black/25 transition-colors">
@@ -98,10 +102,31 @@ export const TopBar: React.FC<TopBarProps> = ({
           <Bookmark className="w-3.5 h-3.5 text-amber-400" />
           <span>Lexicon Archive {favoritesCount > 0 && `(${favoritesCount})`}</span>
         </button>
+
+        {onToggleBoxScale && (
+          <button
+            onClick={onToggleBoxScale}
+            className="flex items-center gap-1.5 hover:text-amber-300 transition-colors"
+            title={boxScale === 'immersive' ? 'Switch to Smaller Display Box (Classic Placard)' : 'Switch to Full & More Immersive Display Box (1.5x / 93% 4K)'}
+          >
+            <Monitor className={`w-3.5 h-3.5 ${boxScale === 'immersive' ? 'text-amber-400' : 'text-stone-400'}`} />
+            <span>{boxScale === 'immersive' ? '4K Box: Full Immersive (93%)' : '4K Box: Smaller Classic'}</span>
+          </button>
+        )}
       </nav>
 
       {/* Zone 3: Primary Actions */}
       <div className="flex items-center gap-2.5">
+        {onToggleBoxScale && (
+          <button
+            onClick={onToggleBoxScale}
+            className="lg:hidden flex items-center p-1.5 text-xs text-stone-300 bg-white/10 rounded-lg hover:bg-white/20"
+            title={boxScale === 'immersive' ? 'Word Box: Full Immersive (93%)' : 'Word Box: Smaller Classic'}
+          >
+            <Monitor className={`w-3.5 h-3.5 ${boxScale === 'immersive' ? 'text-amber-400' : 'text-stone-400'}`} />
+          </button>
+        )}
+
         <button
           onClick={onToggleArtFocus}
           className="lg:hidden flex items-center p-1.5 text-xs text-stone-300 bg-white/10 rounded-lg hover:bg-white/20"
